@@ -249,21 +249,25 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         debugPrint('Preset: ${preset.name}, systemPrompt length: $length, starts with: "$preview"');
       }
 
-      setState(() {
-        _isConfigured = configured;
-        _thinkingMode = thinkingMode;
-        _promptPresetEnabled = promptPresetEnabled;
-        _currentPresetId = currentPresetId;
-        _presets = presets;
-        _userProfile = userProfile;
-        _isCheckingConfiguration = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isConfigured = configured;
+          _thinkingMode = thinkingMode;
+          _promptPresetEnabled = promptPresetEnabled;
+          _currentPresetId = currentPresetId;
+          _presets = presets;
+          _userProfile = userProfile;
+          _isCheckingConfiguration = false;
+        });
+      }
     } catch (e) {
       // 配置检查失败，重置检查状态
       debugPrint('配置检查失败: $e');
-      setState(() {
-        _isCheckingConfiguration = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isCheckingConfiguration = false;
+        });
+      }
     }
   }
 
@@ -327,12 +331,14 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     final conversation = await _conversationService.createNewConversation(
       title: l10n.newConversation,
     );
-    setState(() {
-      _currentConversation = conversation;
-      _messages.clear();
-      _currentTitle = conversation.title;
-      _autoTitleGenerated = false; // 重置标题生成标志
-    });
+    if (mounted) {
+      setState(() {
+        _currentConversation = conversation;
+        _messages.clear();
+        _currentTitle = conversation.title;
+        _autoTitleGenerated = false; // 重置标题生成标志
+      });
+    }
   }
 
   /// 保存当前对话
@@ -346,9 +352,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         updatedAt: DateTime.now(),
       );
       await _conversationService.updateConversation(updatedConversation);
-      setState(() {
-        _currentConversation = updatedConversation;
-      });
+      if (mounted) {
+        setState(() {
+          _currentConversation = updatedConversation;
+        });
+      }
     }
   }
 
@@ -387,6 +395,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   /// 如果用户正在手动滚动，则跳过自动滚动
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       if (_scrollController.hasClients && !_isUserScrolling) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -480,11 +489,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         if (_currentConversation != null && newTitle.isNotEmpty) {
           await _conversationService.updateConversationTitle(
               _currentConversation!.id, newTitle);
-          setState(() {
-            _currentTitle = newTitle;
-            _currentConversation = _currentConversation!.copyWith(title: newTitle);
-            _autoTitleGenerated = true; // 标记已生成
-          });
+          if (mounted) {
+            setState(() {
+              _currentTitle = newTitle;
+              _currentConversation = _currentConversation!.copyWith(title: newTitle);
+              _autoTitleGenerated = true; // 标记已生成
+            });
+          }
 
           // 通知父组件对话已更新
           if (widget.onConversationUpdated != null) {
@@ -554,19 +565,23 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       attachments: attachments,
     );
 
-    setState(() {
-      _messages.add(userMessage);
-      _isLoading = true;
-    });
+    if (mounted) {
+      setState(() {
+        _messages.add(userMessage);
+        _isLoading = true;
+      });
+    }
 
     if (_messages.length == 1 && _currentConversation != null) {
       final newTitle = Conversation.generateTitle(content);
       await _conversationService.updateConversationTitle(
           _currentConversation!.id, newTitle);
-      setState(() {
-        _currentTitle = newTitle;
-        _currentConversation = _currentConversation!.copyWith(title: newTitle);
-      });
+      if (mounted) {
+        setState(() {
+          _currentTitle = newTitle;
+          _currentConversation = _currentConversation!.copyWith(title: newTitle);
+        });
+      }
 
       // 通知父组件对话已更新
       if (widget.onConversationUpdated != null) {
@@ -617,9 +632,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         (chunk) {
           // 如果是第一个chunk，设置生成状态
           if (receivedChunks == 0) {
-            setState(() {
-              _isGenerating = true;
-            });
+            if (mounted) {
+              setState(() {
+                _isGenerating = true;
+              });
+            }
           }
 
           receivedChunks++;
@@ -724,9 +741,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     _streamSubscription = null;
 
     // 更新生成状态
-    setState(() {
-      _isGenerating = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isGenerating = false;
+      });
+    }
 
     // 如果没有收到任何chunk，显示错误
     if (receivedChunks == 0) {
@@ -1077,15 +1096,19 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Future<void> _loadCurrentModel() async {
     final currentPlatform = await _settingsService.getCurrentPlatform();
     if (currentPlatform != null && currentPlatform.defaultModel.isNotEmpty) {
-      setState(() {
-        _currentModel = currentPlatform.defaultModel;
-      });
+      if (mounted) {
+        setState(() {
+          _currentModel = currentPlatform.defaultModel;
+        });
+      }
     } else {
       // 如果没有配置平台，使用旧版本的模型设置
       final oldModel = await _settingsService.getModel();
-      setState(() {
-        _currentModel = oldModel;
-      });
+      if (mounted) {
+        setState(() {
+          _currentModel = oldModel;
+        });
+      }
     }
   }
 
