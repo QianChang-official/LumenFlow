@@ -7,10 +7,12 @@ import '../services/conversation_service.dart';
 
 class ConversationListScreen extends StatefulWidget {
   final Function(String? conversationId) onConversationSelected;
+  final bool autoPopOnSelect;
 
   const ConversationListScreen({
     super.key,
     required this.onConversationSelected,
+    this.autoPopOnSelect = true,
   });
 
   @override
@@ -51,7 +53,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
     });
     // 只传递对话 ID，由 ChatScreen 负责加载完整对话
     widget.onConversationSelected(conversation.id);
-    if (mounted) {
+    if (mounted && widget.autoPopOnSelect) {
       Navigator.pop(context);
     }
   }
@@ -63,7 +65,7 @@ class _ConversationListScreenState extends State<ConversationListScreen> {
     });
     // 只传递对话 ID，由 ChatScreen 负责加载完整对话
     widget.onConversationSelected(conversation.id);
-    if (mounted) {
+    if (mounted && widget.autoPopOnSelect) {
       Navigator.pop(context);
     }
   }

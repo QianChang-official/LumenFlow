@@ -32,7 +32,18 @@ import 'conversation_list_screen.dart';
 /// 设计模式:
 /// 使用StatefulWidget管理本地状态，包括消息列表、加载状态、当前对话等
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final String? initialConversationId;
+  final bool hideConversationListButton;
+  final bool autoCreateConversation;
+  final VoidCallback? onConversationUpdated;
+
+  const ChatScreen({
+    super.key,
+    this.initialConversationId,
+    this.hideConversationListButton = false,
+    this.autoCreateConversation = true,
+    this.onConversationUpdated,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -64,6 +75,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
 
   bool _isLoading = false;
   bool _isConfigured = false;
+  bool _isCheckingConfiguration = false;
   bool _thinkingMode = false;
   bool _promptPresetEnabled = false;
   String _currentPresetId = '';
@@ -81,6 +93,9 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   StreamSubscription<Map<String, dynamic>>? _streamSubscription; // 当前流式响应的订阅
   bool _isGenerating = false; // 是否正在生成AI回复
 
+  // 外部传入的对话ID，用于响应式布局
+  String? _externalConversationId;
+
   @override
   void initState() {
     super.initState();
@@ -97,14 +112,24 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   Future<void> _initializeApp() async {
     await _checkConfiguration();
 
-    // 加载当前对话（使用统一的入口）
-    final currentConversationId =
+    // 优先使用外部传入的对话ID，否则使用服务中保存的当前对话ID
+    final conversationId = widget.initialConversationId ??
         await _conversationService.getCurrentConversationId();
 
-    if (currentConversationId != null) {
-      await _setCurrentConversation(currentConversationId);
-    } else {
+    // 保存外部对话ID用于后续比较
+    _externalConversationId = widget.initialConversationId;
+
+    if (conversationId != null) {
+      await _setCurrentConversation(conversationId);
+    } else if (widget.autoCreateConversation) {
       await _createNewConversation();
+    } else {
+      // 不自动创建对话，显示空状态
+      setState(() {
+        _currentConversation = null;
+        _messages.clear();
+        _currentTitle = '';
+      });
     }
   }
 
@@ -119,6 +144,31 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     // 移除生命周期观察者
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(ChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // 检查外部对话ID是否变化
+    if (widget.initialConversationId != _externalConversationId) {
+      _externalConversationId = widget.initialConversationId;
+
+      // 如果外部对话ID不为空，加载对应对话
+      if (widget.initialConversationId != null) {
+        _setCurrentConversation(widget.initialConversationId!);
+      } else if (widget.autoCreateConversation) {
+        // 如果外部对话ID为空且允许自动创建，创建新对话
+        _createNewConversation();
+      } else {
+        // 不自动创建对话，显示空状态
+        setState(() {
+          _currentConversation = null;
+          _messages.clear();
+          _currentTitle = '';
+        });
+      }
+    }
   }
 
   @override
@@ -155,29 +205,42 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   /// 更新_isConfigured状态变量，控制界面显示和交互
   /// 同时预加载用户头像，避免每个消息气泡重复加载
   Future<void> _checkConfiguration() async {
-    final configured = await _settingsService.isConfigured();
-    final thinkingMode = await _settingsService.getThinkingMode();
-    final promptPresetEnabled = await _settingsService.getPromptPresetEnabled();
-    final currentPresetId = await _settingsService.getPromptPresetId();
-    final presets = await _promptService.loadPresets();
-    // 预加载用户头像，避免每个消息气泡重复加载
-    final userProfile = await _userService.getUserProfile();
-    // 调试日志：检查加载的预设
-    debugPrint('Loaded ${presets.length} preset(s)');
-    for (final preset in presets) {
-      final length = preset.systemPrompt.length;
-      final preview = length > 50 ? '${preset.systemPrompt.substring(0, 50)}...' : preset.systemPrompt;
-      debugPrint('Preset: ${preset.name}, systemPrompt length: $length, starts with: "$preview"');
-    }
+    if (_isCheckingConfiguration) return;
 
-    setState(() {
-      _isConfigured = configured;
-      _thinkingMode = thinkingMode;
-      _promptPresetEnabled = promptPresetEnabled;
-      _currentPresetId = currentPresetId;
-      _presets = presets;
-      _userProfile = userProfile;
-    });
+    _isCheckingConfiguration = true;
+    try {
+      final configured = await _settingsService.isConfigured();
+      final thinkingMode = await _settingsService.getThinkingMode();
+      final promptPresetEnabled = await _settingsService.getPromptPresetEnabled();
+      final currentPresetId = await _settingsService.getPromptPresetId();
+      final presets = await _promptService.loadPresets();
+      // 预加载用户头像，避免每个消息气泡重复加载
+      final userProfile = await _userService.getUserProfile();
+
+      // 调试日志：检查加载的预设
+      debugPrint('Loaded ${presets.length} preset(s)');
+      for (final preset in presets) {
+        final length = preset.systemPrompt.length;
+        final preview = length > 50 ? '${preset.systemPrompt.substring(0, 50)}...' : preset.systemPrompt;
+        debugPrint('Preset: ${preset.name}, systemPrompt length: $length, starts with: "$preview"');
+      }
+
+      setState(() {
+        _isConfigured = configured;
+        _thinkingMode = thinkingMode;
+        _promptPresetEnabled = promptPresetEnabled;
+        _currentPresetId = currentPresetId;
+        _presets = presets;
+        _userProfile = userProfile;
+        _isCheckingConfiguration = false;
+      });
+    } catch (e) {
+      // 配置检查失败，重置检查状态
+      debugPrint('配置检查失败: $e');
+      setState(() {
+        _isCheckingConfiguration = false;
+      });
+    }
   }
 
   /// 设置当前对话（统一的对话加载入口）
@@ -397,6 +460,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
             _currentConversation = _currentConversation!.copyWith(title: newTitle);
             _autoTitleGenerated = true; // 标记已生成
           });
+
+          // 通知父组件对话已更新
+          if (widget.onConversationUpdated != null) {
+            widget.onConversationUpdated!();
+          }
         }
       } catch (e) {
         // 生成标题失败不影响对话继续
@@ -474,6 +542,11 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
         _currentTitle = newTitle;
         _currentConversation = _currentConversation!.copyWith(title: newTitle);
       });
+
+      // 通知父组件对话已更新
+      if (widget.onConversationUpdated != null) {
+        widget.onConversationUpdated!();
+      }
     }
 
     _scrollToBottom();
@@ -842,11 +915,13 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
     /// 包含：导航栏、消息列表、输入框、配置提示等组件
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _openConversationList,
-          child: const Icon(CupertinoIcons.chat_bubble_2),
-        ),
+        leading: widget.hideConversationListButton
+            ? null
+            : CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _openConversationList,
+                child: const Icon(CupertinoIcons.chat_bubble_2),
+              ),
         middle: Text(_currentTitle.isEmpty ? l10n.aiAssistant : _currentTitle),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -867,7 +942,7 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
       child: SafeArea(
         child: Column(
           children: [
-            if (!_isConfigured)
+            if (!_isConfigured && !_isCheckingConfiguration)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),

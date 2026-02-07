@@ -4,7 +4,7 @@ import 'l10n/app_localizations.dart';
 import 'services/settings_service.dart';
 import 'services/notification_service.dart';
 import 'services/live_update_service.dart';
-import 'screens/chat_screen.dart';
+import 'screens/responsive_chat_layout.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -117,7 +117,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           debugShowCheckedModeBanner: false,
         );
       },
-      child: ChatScreen(),
+      child: ResponsiveChatLayout(),
     );
   }
 }
