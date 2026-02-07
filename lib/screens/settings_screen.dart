@@ -29,67 +29,155 @@ class SettingsScreen extends StatefulWidget {
 
 /// SettingsScreen的状态类，管理主设置页面的导航和操作
 class _SettingsScreenState extends State<SettingsScreen> {
+  /// 平板布局的断点宽度（逻辑像素）
+  /// 与responsive_chat_layout.dart中的断点保持一致
+  static const double _tabletBreakpoint = 768.0;
+
+  /// 判断当前是否为平板布局
+  bool get _isTabletLayout {
+    final mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery == null) return false;
+    return mediaQuery.size.width >= _tabletBreakpoint;
+  }
+
   void _openUserProfile() {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const UserProfileScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const UserProfileScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const UserProfileScreen(),
+        ),
+      );
+    }
   }
 
   void _openAdvancedSettings() {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const AdvancedSettingsScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const AdvancedSettingsScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const AdvancedSettingsScreen(),
+        ),
+      );
+    }
   }
 
   void _openPlatformSettings() async {
-    await Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const PlatformSettingsScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      await Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const PlatformSettingsScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      await Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const PlatformSettingsScreen(),
+        ),
+      );
+    }
   }
 
   void _openApiSettings() {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const ApiSettingsScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const ApiSettingsScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const ApiSettingsScreen(),
+        ),
+      );
+    }
   }
 
   void _openModelSettings() {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const ModelSettingsScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const ModelSettingsScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const ModelSettingsScreen(),
+        ),
+      );
+    }
   }
 
   void _openConversationSettings() {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const ConversationSettingsScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const ConversationSettingsScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const ConversationSettingsScreen(),
+        ),
+      );
+    }
   }
 
   void _openAppearanceSettings() async {
-    await Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const AppearanceSettingsScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      await Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const AppearanceSettingsScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      await Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const AppearanceSettingsScreen(),
+        ),
+      );
+    }
   }
 
   @override

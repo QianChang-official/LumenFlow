@@ -95,6 +95,17 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   StreamSubscription<Map<String, dynamic>>? _streamSubscription; // 当前流式响应的订阅
   bool _isGenerating = false; // 是否正在生成AI回复
 
+  /// 平板布局的断点宽度（逻辑像素）
+  /// 与responsive_chat_layout.dart中的断点保持一致
+  static const double _tabletBreakpoint = 768.0;
+
+  /// 判断当前是否为平板布局
+  bool get _isTabletLayout {
+    final mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery == null) return false;
+    return mediaQuery.size.width >= _tabletBreakpoint;
+  }
+
   // 外部传入的对话ID，用于响应式布局
   String? _externalConversationId;
 
@@ -860,12 +871,23 @@ class _ChatScreenState extends State<ChatScreen> with WidgetsBindingObserver {
   /// 使用CupertinoPageRoute导航到SettingsScreen
   /// 返回后重新检查配置状态
   Future<void> _openSettings() async {
-    await Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) => const SettingsScreen(),
-      ),
-    );
+    if (_isTabletLayout) {
+      // 平板模式下使用模态弹窗，避免全屏覆盖导致布局问题
+      await Navigator.push(
+        context,
+        CupertinoModalPopupRoute(
+          builder: (context) => const SettingsScreen(),
+        ),
+      );
+    } else {
+      // 手机模式下使用标准页面路由
+      await Navigator.push(
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const SettingsScreen(),
+        ),
+      );
+    }
     _checkConfiguration();
   }
 
